@@ -38,6 +38,7 @@ import org.drools.core.base.EvaluatorWrapper;
 import org.drools.core.common.DroolsObjectInputStream;
 import org.drools.core.common.InternalFactHandle;
 import org.drools.core.common.InternalWorkingMemory;
+import org.drools.core.common.VisitedAgendaGroup;
 import org.drools.core.definitions.InternalKnowledgePackage;
 import org.drools.core.definitions.rule.impl.RuleImpl;
 import org.drools.core.impl.InternalKnowledgeBase;
@@ -49,6 +50,7 @@ import org.drools.core.rule.IndexableConstraint;
 import org.drools.core.rule.MutableTypeConstraint;
 import org.drools.core.rule.constraint.ConditionEvaluator;
 import org.drools.core.spi.AcceptsReadAccessor;
+import org.drools.core.spi.Activation;
 import org.drools.core.spi.Constraint;
 import org.drools.core.spi.FieldValue;
 import org.drools.core.spi.InternalReadAccessor;
@@ -283,7 +285,29 @@ public class MVELConstraint extends MutableTypeConstraint implements IndexableCo
         try {
             return conditionEvaluator.evaluate(handle, workingMemory, tuple);
         } catch (Exception e) {
-            throw new ConstraintEvaluationException(expression, evaluationContext, e);
+        	/*CPQD 7.63.0.Final.c1 begin*/
+        	try {
+        		
+        		StringBuilder sb = new StringBuilder();
+        		sb.append("Rule [ ");
+        		
+				if (evaluationContext != null && evaluationContext.getRuleNameMap() != null
+						 && evaluationContext.getRuleNameMap().size() > 0) {
+					sb.append(evaluationContext.getRuleNameMap().keySet().iterator().next());	
+				}
+        		
+        		sb.append(" ] ");
+        		sb.append(" failed with the following error [ ");
+        		sb.append(e.toString());
+        		sb.append(" ]");
+        		Exception customizedException = new Exception(sb.toString(),e);
+				
+				workingMemory.getAgenda().handleException(workingMemory,null  ,customizedException);
+        		return false;
+        	}catch (Exception e2) {
+        		throw new ConstraintEvaluationException(expression, evaluationContext, e);
+			}
+        	/*CPQD 7.63.0.Final.c1 end*/
         }
     }
 
